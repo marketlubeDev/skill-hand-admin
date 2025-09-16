@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   title?: string;
@@ -20,6 +21,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   // Define action buttons for specific pages
   const getActionButton = () => {
@@ -76,9 +78,16 @@ export function Header({ title, subtitle }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src="/placeholder-avatar.jpg" alt="Admin" />
+                <AvatarImage
+                  src={user?.avatar || "/placeholder-avatar.jpg"}
+                  alt={user?.name || "Admin"}
+                />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  AD
+                  {user?.name
+                    ?.split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase() || "AD"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -86,10 +95,15 @@ export function Header({ title, subtitle }: HeaderProps) {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Admin User</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  admin@skillhand.com
+                <p className="text-sm font-medium leading-none">
+                  {user?.name || "Admin User"}
                 </p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email || "admin@skillhand.com"}
+                </p>
+                <Badge variant="secondary" className="text-xs w-fit mt-1">
+                  {user?.role || "Administrator"}
+                </Badge>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -102,7 +116,10 @@ export function Header({ title, subtitle }: HeaderProps) {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive cursor-pointer"
+              onClick={logout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
