@@ -96,19 +96,6 @@ export function Sidebar() {
               );
             })}
           </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-white">A</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Admin User</p>
-                <p className="text-xs text-gray-500">admin@skillhand.com</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -122,4 +109,3 @@ export function Sidebar() {
     </>
   );
 }
-

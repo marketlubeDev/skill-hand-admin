@@ -8,8 +8,6 @@ import {
   Settings,
   Menu,
   X,
-  User,
-  LogOut,
 } from "lucide-react";
 import { NavigationItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -108,39 +106,6 @@ export function Sidebar() {
             );
           })}
         </nav>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-sidebar-border">
-          <div
-            className={cn(
-              "flex items-center space-x-3",
-              isCollapsed && "lg:justify-center lg:space-x-0"
-            )}
-          >
-            <div className="w-8 h-8 bg-sidebar-accent rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-sidebar-foreground" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sidebar-foreground font-medium text-sm truncate">
-                  Admin User
-                </p>
-                <p className="text-sidebar-foreground/60 text-xs truncate">
-                  admin@skillhand.com
-                </p>
-              </div>
-            )}
-            {!isCollapsed && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
 
         {/* Collapse Toggle (Desktop) */}
         <Button
