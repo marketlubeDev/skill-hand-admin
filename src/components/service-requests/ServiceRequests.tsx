@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, Filter, Plus } from "lucide-react";
 import { ServiceRequestCard } from "./ServiceRequestCard";
-import { mockServiceRequests } from "@/data/mockData";
 import { ServiceRequest } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,29 +11,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useServiceRequests } from "@/hooks/useServiceRequests";
 
 export function ServiceRequests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
+  const {
+    data: serviceRequests = [],
+    isLoading,
+    isError,
+    error,
+  } = useServiceRequests();
+
   // Filter requests based on search and filters
-  const filteredRequests = mockServiceRequests.filter((request) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      request.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.serviceType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.customerLocation
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+  const filteredRequests = useMemo(
+    () =>
+      serviceRequests.filter((request) => {
+        const matchesSearch =
+          searchQuery === "" ||
+          request.customerName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          request.serviceType
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          request.customerLocation
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || request.status === statusFilter;
-    const matchesPriority =
-      priorityFilter === "all" || request.priority === priorityFilter;
+        const matchesStatus =
+          statusFilter === "all" || request.status === statusFilter;
+        const matchesPriority =
+          priorityFilter === "all" || request.priority === priorityFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+        return matchesSearch && matchesStatus && matchesPriority;
+      }),
+    [serviceRequests, searchQuery, statusFilter, priorityFilter]
+  );
 
   const handleViewDetails = (request: ServiceRequest) => {
     console.log("View details for:", request);
@@ -96,32 +111,41 @@ export function ServiceRequests() {
         </Button>
       </div>
 
+      {/* Loading / Error */}
+      {isLoading && (
+        <div className="text-center text-muted-foreground">
+          Loading service requests...
+        </div>
+      )}
+      {isError && (
+        <div className="text-center text-destructive">
+          {(error as Error)?.message || "Failed to load service requests."}
+        </div>
+      )}
+
       {/* Stats Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-foreground">
-            {mockServiceRequests.length}
+            {serviceRequests.length}
           </div>
           <div className="text-sm text-muted-foreground">Total Requests</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-warning">
-            {mockServiceRequests.filter((r) => r.status === "pending").length}
+            {serviceRequests.filter((r) => r.status === "pending").length}
           </div>
           <div className="text-sm text-muted-foreground">Pending</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-info">
-            {
-              mockServiceRequests.filter((r) => r.status === "in-progress")
-                .length
-            }
+            {serviceRequests.filter((r) => r.status === "in-progress").length}
           </div>
           <div className="text-sm text-muted-foreground">In Progress</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-success">
-            {mockServiceRequests.filter((r) => r.status === "completed").length}
+            {serviceRequests.filter((r) => r.status === "completed").length}
           </div>
           <div className="text-sm text-muted-foreground">Completed</div>
         </div>
