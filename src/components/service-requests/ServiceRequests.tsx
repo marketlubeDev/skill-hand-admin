@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Filter, Plus } from "lucide-react";
 import { ServiceRequestCard } from "./ServiceRequestCard";
 import { ServiceRequest } from "@/types";
@@ -13,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useServiceRequests } from "@/hooks/useServiceRequests";
+import { updateServiceRequest } from "@/lib/api.serviceRequests";
+import { ScheduleServiceDialog } from "./ScheduleServiceDialog";
 
 export function ServiceRequests() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,6 +25,7 @@ export function ServiceRequests() {
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(
     null
   );
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   const {
     data: serviceRequests = [],
@@ -30,24 +34,44 @@ export function ServiceRequests() {
     error,
   } = useServiceRequests();
 
+  const queryClient = useQueryClient();
+  const updateMutation = useMutation({
+    mutationFn: updateServiceRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+    },
+  });
+
   // Filter requests based on search and filters
   const filteredRequests = useMemo(
     () =>
       serviceRequests.filter((request) => {
+        const normalizedQuery = searchQuery.trim().toLowerCase();
+        const fieldsToSearch = [
+          request.customerName,
+          request.name,
+          request.serviceType,
+          request.service,
+          request.customerLocation,
+          request.address,
+          request.city,
+          request.state,
+          request.zip,
+          request.id,
+          request._id,
+        ];
         const matchesSearch =
-          searchQuery === "" ||
-          request.customerName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          request.serviceType
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          request.customerLocation
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase());
+          normalizedQuery === "" ||
+          fieldsToSearch.some(
+            (value) =>
+              typeof value === "string" &&
+              value.toLowerCase().includes(normalizedQuery)
+          );
 
+        const normalizedStatus =
+          request.status === "in-progress" ? "in-process" : request.status;
         const matchesStatus =
-          statusFilter === "all" || request.status === statusFilter;
+          statusFilter === "all" || normalizedStatus === statusFilter;
         const matchesPriority =
           priorityFilter === "all" || request.priority === priorityFilter;
 
@@ -62,8 +86,11 @@ export function ServiceRequests() {
   };
 
   const handleAccept = (requestId: string) => {
-    console.log("Accept request:", requestId);
-    // In a real app, this would update the request status
+    const req =
+      serviceRequests.find((r) => r.id === requestId || r._id === requestId) ||
+      null;
+    setSelectedRequest(req);
+    setIsScheduleOpen(true);
   };
 
   const handleComplete = (requestId: string) => {
@@ -91,7 +118,7 @@ export function ServiceRequests() {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
+            <SelectItem value="in-process">In Process</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
@@ -143,9 +170,9 @@ export function ServiceRequests() {
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-info">
-            {serviceRequests.filter((r) => r.status === "in-progress").length}
+            {serviceRequests.filter((r) => r.status === "in-process").length}
           </div>
-          <div className="text-sm text-muted-foreground">In Progress</div>
+          <div className="text-sm text-muted-foreground">In Process</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-success">
@@ -159,7 +186,7 @@ export function ServiceRequests() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRequests.map((request) => (
           <ServiceRequestCard
-            key={request.id}
+            key={(request._id || request.id) as string}
             request={request}
             onViewDetails={handleViewDetails}
             onAccept={handleAccept}
@@ -185,6 +212,26 @@ export function ServiceRequests() {
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         request={selectedRequest}
+      />
+
+      <ScheduleServiceDialog
+        open={isScheduleOpen}
+        onOpenChange={setIsScheduleOpen}
+        customerName={selectedRequest?.customerName}
+        defaultDate={selectedRequest?.scheduledDate}
+        isSubmitting={updateMutation.isPending}
+        onConfirm={(scheduledDateISO) => {
+          const id = (selectedRequest?._id || selectedRequest?.id) as
+            | string
+            | undefined;
+          if (!id) return;
+          updateMutation.mutate({
+            id,
+            status: "in-process",
+            scheduledDate: scheduledDateISO,
+          });
+          setIsScheduleOpen(false);
+        }}
       />
     </div>
   );

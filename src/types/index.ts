@@ -1,16 +1,27 @@
 export interface ServiceRequest {
   id: string;
-  customerName: string;
-  customerPhone: string;
-  customerLocation: string;
-  serviceType: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerLocation?: string;
+  serviceType?: string;
   description: string;
-  estimatedCost: number;
-  status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
-  priority: 'high' | 'medium' | 'low';
-  requestedDate: string;
+  estimatedCost?: number;
+  status: "pending" | "in-progress" | "in-process" | "completed" | "cancelled";
+  priority: "high" | "medium" | "low";
+  requestedDate?: string;
   scheduledDate?: string;
   completedDate?: string;
+  // Some backends may use underscore id and different fields; keep optional for compatibility
+  _id?: string;
+  name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  service?: string;
+  preferredDate?: string;
+  preferredTime?: string;
 }
 
 export interface EmployeeApplication {
@@ -20,12 +31,12 @@ export interface EmployeeApplication {
   email: string;
   profileImage?: string;
   skills: string[];
-  experienceLevel: 'Beginner' | 'Intermediate' | 'Expert';
+  experienceLevel: "Beginner" | "Intermediate" | "Expert";
   rating: number;
   previousJobCount: number;
   certifications: string[];
   expectedSalary: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   appliedDate: string;
   location: string;
 }

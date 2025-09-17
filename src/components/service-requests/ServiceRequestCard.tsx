@@ -26,7 +26,7 @@ function getStatusBadgeClass(status: string) {
   switch (status) {
     case "pending":
       return "status-pending";
-    case "in-progress":
+    case "in-process":
       return "status-active";
     case "completed":
       return "status-completed";
@@ -158,16 +158,16 @@ export function ServiceRequestCard({
             Details
           </Button>
 
-          {/* {request.status === "pending" && ( */}
-          <Button
-            size="sm"
-            onClick={() => onAccept?.(request.id)}
-            className="flex-1"
-          >
-            <CheckCircle className="h-4 w-4 mr-1" />
-            Accept
-          </Button>
-          {/* )} */}
+          {request.status === "pending" && (
+            <Button
+              size="sm"
+              onClick={() => onAccept?.((request._id || request.id) as string)}
+              className="flex-1"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Accept
+            </Button>
+          )}
 
           {/* {request.status === "in-progress" && ( */}
           <Button

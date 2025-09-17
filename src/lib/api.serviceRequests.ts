@@ -24,3 +24,19 @@ export async function fetchServiceRequests(
   // Fallback to empty array to keep UI stable
   return [] as ServiceRequest[];
 }
+
+export type UpdateServiceRequestInput = {
+  id: string;
+  status?: ServiceRequest["status"];
+  scheduledDate?: string;
+};
+
+export async function updateServiceRequest(
+  input: UpdateServiceRequestInput
+): Promise<ServiceRequest> {
+  const { id, ...body } = input;
+  return apiFetch<ServiceRequest>(`/service-requests/${id}`, {
+    method: "PUT",
+    body,
+  });
+}
