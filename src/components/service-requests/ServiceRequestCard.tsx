@@ -106,18 +106,20 @@ export function ServiceRequestCard({
           </div>
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
-            <span className="line-clamp-1">{request.location}</span>
+            <span className="line-clamp-1">
+              {request.address} {request.city} {request.state} {request.zip}
+            </span>
           </div>
         </div>
 
         {/* Dates and Cost */}
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Requested</p>
+            <p className="text-xs text-muted-foreground mb-1">Preferred Date</p>
             <div className="flex items-center space-x-1 text-sm">
               <Calendar className="h-3 w-3 text-muted-foreground" />
               <span className="text-foreground">
-                {formatDate(request.requestedDate)}
+                {request.preferredDate} {request.preferredTime}
               </span>
             </div>
           </div>
@@ -132,17 +134,17 @@ export function ServiceRequestCard({
           </div> */}
         </div>
 
-        {request.scheduledDate && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Scheduled</p>
-            <div className="flex items-center space-x-1 text-sm">
-              <Clock className="h-3 w-3 text-muted-foreground" />
-              <span className="text-foreground">
-                {formatDate(request.scheduledDate)}
-              </span>
-            </div>
+        {/* {request.scheduledDate && ( */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Scheduled</p>
+          <div className="flex items-center space-x-1 text-sm">
+            <Clock className="h-3 w-3 text-muted-foreground" />
+            <span className="text-foreground">
+              {formatDate(request.scheduledDate)}
+            </span>
           </div>
-        )}
+        </div>
+        {/* )} */}
 
         {/* Actions */}
         <div className="flex items-center space-x-2 pt-2">
@@ -156,27 +158,27 @@ export function ServiceRequestCard({
             Details
           </Button>
 
-          {request.status === "pending" && (
-            <Button
-              size="sm"
-              onClick={() => onAccept?.(request.id)}
-              className="flex-1"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Accept
-            </Button>
-          )}
+          {/* {request.status === "pending" && ( */}
+          <Button
+            size="sm"
+            onClick={() => onAccept?.(request.id)}
+            className="flex-1"
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Accept
+          </Button>
+          {/* )} */}
 
-          {request.status === "in-progress" && (
-            <Button
-              size="sm"
-              onClick={() => onComplete?.(request.id)}
-              className="flex-1 bg-success hover:bg-success/90"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Complete
-            </Button>
-          )}
+          {/* {request.status === "in-progress" && ( */}
+          <Button
+            size="sm"
+            onClick={() => onComplete?.(request.id)}
+            className="flex-1 bg-success hover:bg-success/90"
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Complete
+          </Button>
+          {/* )} */}
         </div>
       </CardContent>
     </Card>

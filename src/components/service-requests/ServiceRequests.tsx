@@ -4,6 +4,7 @@ import { ServiceRequestCard } from "./ServiceRequestCard";
 import { ServiceRequest } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ServiceRequestDetailsDialog } from "./ServiceRequestDetailsDialog";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,10 @@ export function ServiceRequests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(
+    null
+  );
 
   const {
     data: serviceRequests = [],
@@ -52,8 +57,8 @@ export function ServiceRequests() {
   );
 
   const handleViewDetails = (request: ServiceRequest) => {
-    console.log("View details for:", request);
-    // In a real app, this would open a detailed view modal or navigate to a detail page
+    setSelectedRequest(request);
+    setIsDetailsOpen(true);
   };
 
   const handleAccept = (requestId: string) => {
@@ -63,7 +68,6 @@ export function ServiceRequests() {
 
   const handleComplete = (requestId: string) => {
     console.log("Complete request:", requestId);
-    // In a real app, this would mark the request as completed
   };
 
   return (
@@ -176,6 +180,12 @@ export function ServiceRequests() {
           </div>
         </div>
       )}
+
+      <ServiceRequestDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        request={selectedRequest}
+      />
     </div>
   );
 }
