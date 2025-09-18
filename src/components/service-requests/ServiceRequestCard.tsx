@@ -23,20 +23,29 @@ interface ServiceRequestCardProps {
   onReject?: (requestId: string) => void;
 }
 
-function getStatusBadgeClass(status: string) {
+function getStatusBadgeVariant(
+  status: string
+):
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "success"
+  | "warning"
+  | "info"
+  | "outline" {
   switch (status) {
     case "pending":
-      return "status-pending";
+      return "warning";
     case "in-process":
-      return "status-active";
+    case "in-progress":
+      return "info";
     case "completed":
-      return "status-completed";
+      return "success";
     case "cancelled":
-      return "status-cancelled";
     case "rejected":
-      return "status-cancelled";
+      return "destructive";
     default:
-      return "status-pending";
+      return "secondary";
   }
 }
 
@@ -82,9 +91,7 @@ export function ServiceRequestCard({
             <AlertTriangle
               className={cn("h-4 w-4", getPriorityColor(request.priority))}
             />
-            <Badge
-              className={`status-badge ${getStatusBadgeClass(request.status)}`}
-            >
+            <Badge variant={getStatusBadgeVariant(request.status)}>
               {request.status}
             </Badge>
           </div>

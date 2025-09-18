@@ -120,7 +120,7 @@ export function Dashboard() {
                     <Badge
                       className={`status-badge ${getStatusBadgeClass(
                         request.status
-                      )}`}
+                      )} border-0`}
                     >
                       {request.status}
                     </Badge>
@@ -171,7 +171,7 @@ export function Dashboard() {
                     <Badge
                       className={`status-badge ${getStatusBadgeClass(
                         application.status
-                      )}`}
+                      )} border-0`}
                     >
                       {application.status}
                     </Badge>
