@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Filter, Plus } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, Filter, Plus, Loader2 } from "lucide-react";
 import { ServiceRequestCard } from "./ServiceRequestCard";
 import { ServiceRequest } from "@/types";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useServiceRequests } from "@/hooks/useServiceRequests";
-import { updateServiceRequest } from "@/lib/api.serviceRequests";
+import { useInfiniteServiceRequests } from "@/hooks/useInfiniteServiceRequests";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import {
+  updateServiceRequest,
+  fetchServiceRequestsSummary,
+  fetchServiceRequests,
+} from "@/lib/api.serviceRequests";
 import { ScheduleServiceDialog } from "./ScheduleServiceDialog";
 
 export function ServiceRequests() {
@@ -28,18 +33,115 @@ export function ServiceRequests() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   const {
-    data: serviceRequests = [],
+    data,
     isLoading,
     isError,
     error,
-  } = useServiceRequests();
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteServiceRequests(10);
+
+  // Fetch overall summary once (if backend supports it)
+  const { data: summary } = useQuery({
+    queryKey: ["service-requests-summary"],
+    queryFn: ({ signal }) => fetchServiceRequestsSummary(signal),
+    staleTime: 60_000,
+  });
+
+  // Background full counts if summary is not available
+  const { data: allForCounts } = useQuery({
+    queryKey: ["service-requests-all-counts"],
+    queryFn: ({ signal }) => fetchServiceRequests(signal),
+    enabled: !summary, // only fetch all if no summary
+    staleTime: 60_000,
+    select: (all) => {
+      const total = all.length;
+      const pending = all.filter((r) => r.status === "pending").length;
+      const inProcess = all.filter(
+        (r) => r.status === "in-process" || r.status === "in-progress"
+      ).length;
+      const completed = all.filter((r) => r.status === "completed").length;
+      const cancelled = all.filter((r) => r.status === "cancelled").length;
+      const rejected = all.filter((r) => r.status === "rejected").length;
+      return {
+        total,
+        countsByStatus: { pending, inProcess, completed, cancelled, rejected },
+      };
+    },
+  });
+
+  // Flatten all pages into a single array
+  const serviceRequests = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) ?? [];
+  }, [data]);
+
+  // Use API-reported total when available; otherwise, fallback to loaded count
+  const totalServiceRequests = useMemo(() => {
+    return (
+      summary?.total ??
+      allForCounts?.total ??
+      data?.pages?.[0]?.total ??
+      serviceRequests.length
+    );
+  }, [summary, allForCounts, data, serviceRequests.length]);
+
+  // Status totals (prefer API counts if present)
+  const countsByStatus = useMemo(() => {
+    const apiCounts =
+      summary?.countsByStatus ?? data?.pages?.[0]?.countsByStatus;
+    if (apiCounts && Object.keys(apiCounts).length > 0) {
+      return {
+        pending: apiCounts.pending,
+        inProcess: apiCounts["in-process"] ?? apiCounts["in-progress"],
+        completed: apiCounts.completed,
+        cancelled: apiCounts.cancelled,
+      };
+    }
+
+    // Fallback to background full counts if available
+    if (allForCounts) {
+      return {
+        pending: allForCounts.countsByStatus.pending,
+        inProcess: allForCounts.countsByStatus.inProcess,
+        completed: allForCounts.countsByStatus.completed,
+        cancelled: allForCounts.countsByStatus.cancelled,
+      };
+    }
+
+    // Last fallback: compute from currently loaded items
+    return {
+      pending: serviceRequests.filter((r) => r.status === "pending").length,
+      inProcess: serviceRequests.filter((r) => r.status === "in-process")
+        .length,
+      completed: serviceRequests.filter((r) => r.status === "completed").length,
+      cancelled: serviceRequests.filter((r) => r.status === "cancelled").length,
+    };
+  }, [summary, data, allForCounts, serviceRequests]);
 
   const queryClient = useQueryClient();
   const updateMutation = useMutation({
     mutationFn: updateServiceRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      queryClient.invalidateQueries({
+        queryKey: ["service-requests-infinite"],
+      });
+      // Refresh totals and status counts immediately
+      queryClient.invalidateQueries({ queryKey: ["service-requests-summary"] });
+      queryClient.invalidateQueries({
+        queryKey: ["service-requests-all-counts"],
+      });
     },
+  });
+
+  // Intersection observer for infinite scroll
+  const loadMoreRef = useIntersectionObserver({
+    onIntersect: useCallback(() => {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]),
+    enabled: hasNextPage && !isFetchingNextPage,
   });
 
   // Filter requests based on search and filters
@@ -130,8 +232,7 @@ export function ServiceRequests() {
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="in-process">In Process</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>{" "}
           </SelectContent>
         </Select>
 
@@ -146,11 +247,6 @@ export function ServiceRequests() {
             <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
-
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          More Filters
-        </Button>
       </div>
 
       {/* Loading / Error */}
@@ -169,31 +265,31 @@ export function ServiceRequests() {
       <div className="grid grid-cols-5 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-foreground">
-            {serviceRequests.length}
+            {totalServiceRequests}
           </div>
           <div className="text-sm text-muted-foreground">Total Requests</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-warning">
-            {serviceRequests.filter((r) => r.status === "pending").length}
+            {countsByStatus.pending ?? 0}
           </div>
           <div className="text-sm text-muted-foreground">Pending</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-info">
-            {serviceRequests.filter((r) => r.status === "in-process").length}
+            {countsByStatus.inProcess ?? 0}
           </div>
           <div className="text-sm text-muted-foreground">In Process</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-success">
-            {serviceRequests.filter((r) => r.status === "completed").length}
+            {countsByStatus.completed ?? 0}
           </div>
           <div className="text-sm text-muted-foreground">Completed</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-destructive">
-            {serviceRequests.filter((r) => r.status === "cancelled").length}
+            {countsByStatus.cancelled ?? 0}
           </div>
           <div className="text-sm text-muted-foreground">Cancelled</div>
         </div>
@@ -212,6 +308,29 @@ export function ServiceRequests() {
           />
         ))}
       </div>
+
+      {/* Infinite Scroll Loading Indicator */}
+      {hasNextPage && (
+        <div ref={loadMoreRef} className="flex justify-center py-8">
+          {isFetchingNextPage ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading more requests...</span>
+            </div>
+          ) : (
+            <div className="text-muted-foreground text-sm">
+              Scroll down to load more
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* End of results indicator */}
+      {!hasNextPage && serviceRequests.length > 0 && (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          You've reached the end of the results
+        </div>
+      )}
 
       {filteredRequests.length === 0 && (
         <div className="text-center py-12">
