@@ -6,7 +6,13 @@ export interface ServiceRequest {
   serviceType?: string;
   description: string;
   estimatedCost?: number;
-  status: "pending" | "in-progress" | "in-process" | "completed" | "cancelled";
+  status:
+    | "pending"
+    | "in-progress"
+    | "in-process"
+    | "completed"
+    | "cancelled"
+    | "rejected";
   priority: "high" | "medium" | "low";
   requestedDate?: string;
   scheduledDate?: string;

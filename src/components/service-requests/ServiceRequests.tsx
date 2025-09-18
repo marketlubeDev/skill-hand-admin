@@ -94,7 +94,17 @@ export function ServiceRequests() {
   };
 
   const handleComplete = (requestId: string) => {
-    console.log("Complete request:", requestId);
+    updateMutation.mutate({
+      id: requestId,
+      status: "completed",
+    });
+  };
+
+  const handleReject = (requestId: string) => {
+    updateMutation.mutate({
+      id: requestId,
+      status: "cancelled",
+    });
   };
 
   return (
@@ -121,6 +131,7 @@ export function ServiceRequests() {
             <SelectItem value="in-process">In Process</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
 
@@ -155,7 +166,7 @@ export function ServiceRequests() {
       )}
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-foreground">
             {serviceRequests.length}
@@ -180,6 +191,12 @@ export function ServiceRequests() {
           </div>
           <div className="text-sm text-muted-foreground">Completed</div>
         </div>
+        <div className="bg-card border border-border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-destructive">
+            {serviceRequests.filter((r) => r.status === "cancelled").length}
+          </div>
+          <div className="text-sm text-muted-foreground">Cancelled</div>
+        </div>
       </div>
 
       {/* Service Requests Grid */}
@@ -191,6 +208,7 @@ export function ServiceRequests() {
             onViewDetails={handleViewDetails}
             onAccept={handleAccept}
             onComplete={handleComplete}
+            onReject={handleReject}
           />
         ))}
       </div>

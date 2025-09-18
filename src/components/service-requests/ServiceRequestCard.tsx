@@ -20,6 +20,7 @@ interface ServiceRequestCardProps {
   onViewDetails?: (request: ServiceRequest) => void;
   onAccept?: (requestId: string) => void;
   onComplete?: (requestId: string) => void;
+  onReject?: (requestId: string) => void;
 }
 
 function getStatusBadgeClass(status: string) {
@@ -31,6 +32,8 @@ function getStatusBadgeClass(status: string) {
     case "completed":
       return "status-completed";
     case "cancelled":
+      return "status-cancelled";
+    case "rejected":
       return "status-cancelled";
     default:
       return "status-pending";
@@ -65,6 +68,7 @@ export function ServiceRequestCard({
   onViewDetails,
   onAccept,
   onComplete,
+  onReject,
 }: ServiceRequestCardProps) {
   return (
     <Card className="hover:shadow-md transition-all duration-200 border-border/50">
@@ -159,26 +163,43 @@ export function ServiceRequestCard({
           </Button>
 
           {request.status === "pending" && (
-            <Button
-              size="sm"
-              onClick={() => onAccept?.((request._id || request.id) as string)}
-              className="flex-1"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Accept
-            </Button>
+            <>
+              <Button
+                size="sm"
+                onClick={() =>
+                  onAccept?.((request._id || request.id) as string)
+                }
+                className="flex-1"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Accept
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() =>
+                  onReject?.((request._id || request.id) as string)
+                }
+                className="flex-1"
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                Reject
+              </Button>
+            </>
           )}
 
-          {/* {request.status === "in-progress" && ( */}
-          <Button
-            size="sm"
-            onClick={() => onComplete?.(request.id)}
-            className="flex-1 bg-success hover:bg-success/90"
-          >
-            <CheckCircle className="h-4 w-4 mr-1" />
-            Complete
-          </Button>
-          {/* )} */}
+          {request.status === "in-process" && (
+            <Button
+              size="sm"
+              onClick={() =>
+                onComplete?.((request._id || request.id) as string)
+              }
+              className="flex-1 bg-success hover:bg-success/90"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Complete
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
