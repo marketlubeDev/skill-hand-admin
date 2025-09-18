@@ -36,7 +36,6 @@ export function ScheduleServiceDialog({
   const handleConfirm = () => {
     if (!scheduledAt) return;
     onConfirm(new Date(scheduledAt).toISOString());
-    alert("handleConfirm");
   };
 
   return (
